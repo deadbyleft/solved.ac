@@ -128,10 +128,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="12865.cpp" />
+    <ClCompile Include="1916.cpp" />
     <ClCompile Include="2096_성공.cpp" />
     <ClCompile Include="5639.cpp" />
     <ClCompile Include="N_and_M.cpp" />
     <ClCompile Include="segment.cpp" />
+    <ClCompile Include="어드벤처디자인_심화_01.cpp" />
     <ClCompile Include="어드벤처디자인_중간.cpp" />
     <ClCompile Include="어드벤처디자인_중간_2.cpp" />
     <ClCompile Include="어드벤처디자인_중간_3.cpp" />
