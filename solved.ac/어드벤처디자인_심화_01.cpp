@@ -482,7 +482,7 @@ int landing_airplane(int airport_num, int air_num, bool& airport1_used, bool& ai
 				
 	if (airport_num == 3 && airport3.size() == 0)
 	{
-		airport3.push(air_num - 1); // airport3에 있는 값이 이륙인지 출력인지 확인
+		airport3.push(air_num - 1); // airport3에 있는 값이 이륙인지 출력인지 확인 + airport3에 들어갈 조건인 '비상 착륙' 만족하는지 확인
 
 		update_situation(air_num, false, air_1, air_2, air_3, air_4);
 	}
@@ -523,7 +523,7 @@ int search_landing_airport(int situation, bool& airport1_used, bool& airport2_us
 	else if (airport2_used == false && airport2_landing.size() < 2)
 		return 2;
 
-	else if (airport3_used_takeoff == false && airport3.size() == 0)
+	else if (airport3_used_takeoff == false && airport3.size() == 0) // 수정 필요 (비상 착륙만 가능)
 		return 3;
 
 	else if (situation < 0) // -1 = 사고
