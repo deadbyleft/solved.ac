@@ -382,6 +382,8 @@ int landing_airplane(int airport_num, int air_num, bool& airport1_used, bool& ai
 	queue<int>& airport1_landing, queue<int>& airport2_landing, queue<int>& airport3,
 	airplane& air_1, airplane& air_2, airplane& air_3, airplane& air_4)
 {
+	if (airport_num == -1) // 사고
+		return airport_num;
 
 	if (airport_num == 0) // 착륙불가
 	{
@@ -393,6 +395,8 @@ int landing_airplane(int airport_num, int air_num, bool& airport1_used, bool& ai
 			air_3.set_accident(true);
 		if (air_4.get_airnum(air_4.check_flying()) == air_num)
 			air_4.set_accident(true);
+
+		update_situation(air_num, air_1, air_2, air_3, air_4);
 
 		return airport_num;
 	}
@@ -464,10 +468,12 @@ int search_landing_airport(int situation, bool& airport1_used, bool& airport2_us
 	else if (airport3_used == false && airport3.size() == 0)
 		return 3;
 
-	else if (situation == 0) // - 1 = 사고 | 0 = 착륙불가
+	else if (situation < 0) // -1 = 사고
 		return -1;
+
 	else
-		return 0;
+		return 0; // 착륙불가
+
 }
 
 
@@ -491,7 +497,7 @@ int find_airport(int situation, int air_num, bool& airport1_used, bool& airport2
 
 	return find_result;
 
-
+	// 0 -> 사고, -1 -> 착륙 불가
 }
 
 void cal_priority(vector <pair<bool, int>>& takeoff_priority, vector <pair<int, int>>& landing_priority,
@@ -588,7 +594,7 @@ void test()
 		if (landing_priority.size() > 0)
 			for (int i = 0; i < landing_priority.size(); i++)
 				if (landing_priority[i].first <= 0) // 비상착륙 상황. (수정 필요)
-					find_airport(landing_priority[i].second, landing_priority[i].second, airport1_used, airport2_used, airport3_used,
+					find_airport(landing_priority[i].first, landing_priority[i].second, airport1_used, airport2_used, airport3_used,
 						airport1_takeoff, airport1_landing, airport2_takeoff,
 						airport2_landing, airport3, air_1, air_2, air_3, air_4);
 		// 적절한 큐를 찾는다. 큐값을 찾지 못한다면 사고로 기록한다.
@@ -604,7 +610,7 @@ void test()
 		if (landing_priority.size() > 0)
 			for (int i = 0; i < landing_priority.size(); i++)
 				if (landing_priority[i].first != 0) // 착륙 상황 (현재 비행중)
-					find_airport(landing_priority[i].second % 2, landing_priority[i].second, airport1_used, airport2_used, airport3_used,
+					find_airport(landing_priority[i].first, landing_priority[i].second, airport1_used, airport2_used, airport3_used,
 						airport1_takeoff, airport1_landing, airport2_takeoff, airport2_landing, airport3,
 						air_1, air_2, air_3, air_4);
 
