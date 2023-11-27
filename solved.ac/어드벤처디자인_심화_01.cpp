@@ -17,9 +17,7 @@ private:
 
 	bool accident = false; // 사고여부
 	bool flying = false; // 비행여부
-	bool need_landing = false; // 착륙 필요 여부 (연료 부족할경우 분기 발생)
 	bool emergency_landing = false; // 긴급 착륙 여부
-	bool useable = true; // 비행기 사용가능여부
 
 public:
 	void set_initial()
@@ -40,17 +38,13 @@ public:
 	}
 	void engage_fuel()
 	{
-		now_fuel += fuel / 10;
+		now_fuel += get_loss_fuel();
 		if (now_fuel > fuel)
 			now_fuel = fuel;
 	}
 	void using_fuel()
 	{
 		now_fuel -= loss_fuel;
-	}
-	void set_need_landing()
-	{
-		need_landing = true;
 	}
 	void set_flying(bool flying_now)
 	{
@@ -106,22 +100,31 @@ public:
 	{
 		return now_fuel;
 	}
-
-	bool get_status()
+	int get_loss_fuel()
 	{
-		if (check_useable()) // 사용가능여부 확인 (사고유무)
+		return loss_fuel;
+	}
+
+	int get_status()
+	{
+		if (check_accident()) // 사용가능여부 확인 (사고유무)
+			return -1; // 사용불가
+
+		else if (check_flying()) // check_need_landing();
+			if (get_limittime() < 3)
+				return 11; // 착륙필요
+			else
+				return 10; // 비행중
+
+		else  // 이륙하지 않고 큐에 남아있는 상태
 		{
-			if (check_flying()) // check_need_landing();
-				return true; // 비행중
-
-			else // 이륙하지 않고 큐에 남아있는 상태
-			{
 				engage_fuel();
-				return false; // 대기중
-			}
+				if (check_engaged_full())
+					return 1; // 이륙필요
+				else
+					return 0;
 		}
-
-		return -1; // 사용불가
+		
 	}
 
 
@@ -131,22 +134,11 @@ public:
 	}
 	bool check_accident() // 사고여부 반환
 	{
-		if (get_limittime() < 0)
-			return true;
-
-		return false;
+		return accident;
 	}
 	bool check_flying() // 비행 여부
 	{
 		return flying;
-	}
-	bool check_need_landing()
-	{
-		return need_landing;
-	}
-	bool check_useable()
-	{
-		return useable;
 	}
 	bool check_engaged_full()
 	{
@@ -157,7 +149,7 @@ public:
 
 void print_result(queue<int>& airport1_takeoff, queue<int>& airport1_landing, queue<int>& airport2_takeoff,
 	queue<int>& airport2_landing, queue<int>& airport3,
-	airplane& air_1, airplane& air_2, airplane& air_3, airplane& air_4) // 사고, 비상착륙 추가
+	airplane& air_1, airplane& air_2, airplane& air_3, airplane& air_4, bool airport3_used_takeoff) // 사고, 비상착륙 추가
 {
 	cout << "\n\n";
 
@@ -207,9 +199,12 @@ void print_result(queue<int>& airport1_takeoff, queue<int>& airport1_landing, qu
 			cout << airport2_landing.back() << " ";
 	}
 
-	
+	cout << "\n\n [ 3번 공항 ]\n";
 
-
+	if (airport3_used_takeoff)
+		cout << " [ 이륙 큐 ] : " << airport3.front();
+	else if (airport3.size() > 0)
+		cout << " [ 착륙 큐 ] : " << airport3.front();
 
 	cout << "\n\n ---------------------------------------------------------------------------";
 
@@ -240,11 +235,11 @@ int initial_setting(airplane& air_1, airplane& air_2, airplane& air_3, airplane&
 
 void unit_setting(vector <pair<int, int>>& landing_priority, vector <pair<bool, int>>& takeoff_priority,
 	queue<int>& airport1_takeoff, queue<int>& airport1_landing, queue<int>& airport2_takeoff, queue<int>& airport2_landing, queue<int>& airport3,
-	bool& airport1_used, bool& airport2_used, bool& airport3_used)
+	bool& airport1_used, bool& airport2_used, bool& airport3_used_takeoff)
 {
 	airport1_used = false;
 	airport2_used = false;
-	airport3_used = false;
+	airport3_used_takeoff = false;
 
 	landing_priority.clear();
 	takeoff_priority.clear();
@@ -267,7 +262,7 @@ void conclusion()
 
 }
 
-void airplane_initiate(int air_num, bool& airport1_used, bool& airport2_used, bool& airport3_used,
+void airplane_initiate(int air_num, bool& airport1_used, bool& airport2_used, bool& airport3_used_takeoff,
 	queue<int>& airport1_landing, queue<int>& airport2_landing, queue<int>& airport3,
 	airplane& air_1, airplane& air_2, airplane& air_3, airplane& air_4)
 {
@@ -303,31 +298,35 @@ void airplane_initiate(int air_num, bool& airport1_used, bool& airport2_used, bo
 	// air_num 번호 따라 class airplane 초기화
 }
 
-void update_situation(int air_num, airplane& air_1, airplane& air_2, airplane& air_3, airplane& air_4)
+void update_situation(int air_num, bool flying, airplane& air_1, airplane& air_2, airplane& air_3, airplane& air_4)
 {
-	if (air_1.get_airnum(0) == air_num)
-		air_1.set_flying(true);
-	if (air_1.get_airnum(1) == air_num)
-		air_1.set_flying(false);
+	if (air_1.get_airnum(-1) == air_num / 10)
+		if (flying)
+			air_1.set_flying(true);
+		else
+			air_1.set_flying(false);
 
-	if (air_2.get_airnum(0) == air_num)
-		air_2.set_flying(true);
-	if (air_2.get_airnum(1) == air_num)
-		air_2.set_flying(false);
+	if (air_2.get_airnum(-1) == air_num / 10)
+		if (flying)
+			air_2.set_flying(true);
+		else
+			air_2.set_flying(false);
 
-	if (air_3.get_airnum(0) == air_num)
-		air_3.set_flying(true);
-	if (air_3.get_airnum(1) == air_num)
-		air_3.set_flying(false);
+	if (air_3.get_airnum(-1) == air_num / 10)
+		if (flying)
+			air_3.set_flying(true);
+		else
+			air_3.set_flying(false);
 
-	if (air_4.get_airnum(0) == air_num)
-		air_4.set_flying(true);
-	if (air_4.get_airnum(1) == air_num)
-		air_4.set_flying(false);
+	if (air_4.get_airnum(-1) == air_num / 10)
+		if (flying)
+			air_4.set_flying(true);
+		else
+			air_4.set_flying(false);
 	
 }
 
-int takeoff_airplane(int airport_num, int air_num, bool& airport1_used, bool& airport2_used, bool& airport3_used,
+int takeoff_airplane(int airport_num, int air_num, bool& airport1_used, bool& airport2_used, bool& airport3_used_takeoff,
 	queue<int>& airport1_takeoff, queue<int>& airport1_landing, queue<int>& airport2_takeoff,
 	queue<int>& airport2_landing, queue<int>& airport3, airplane& air_1, airplane& air_2, airplane& air_3,
 	airplane& air_4)
@@ -344,41 +343,38 @@ int takeoff_airplane(int airport_num, int air_num, bool& airport1_used, bool& ai
 		{
 			airport1_takeoff.push(air_num);
 			airport1_used = true;
-			airplane_initiate(air_num, airport1_used, airport2_used, airport3_used,
+			airplane_initiate(air_num, airport1_used, airport2_used, airport3_used_takeoff,
 				airport1_landing, airport2_landing, airport3, air_1, air_2, air_3, air_4); // 이륙때만 필요
 
-			update_situation(air_num, air_1, air_2, air_3, air_4);
+			update_situation(air_num, true, air_1, air_2, air_3, air_4);
 		}
 
 		if (airport_num == 2 && airport2_used == false)
 		{
 			airport2_takeoff.push(air_num);
 			airport2_used = true;
-			airplane_initiate(air_num, airport1_used, airport2_used, airport3_used,
+			airplane_initiate(air_num, airport1_used, airport2_used, airport3_used_takeoff,
 				airport1_landing, airport2_landing, airport3, air_1, air_2, air_3, air_4); // 이륙때만 필요
 
-			update_situation(air_num, air_1, air_2, air_3, air_4);
+			update_situation(air_num, true, air_1, air_2, air_3, air_4);
 		}
 
-		if (airport_num == 3 && airport3_used == false)
+		if (airport_num == 3 && airport3_used_takeoff == false)
 		{
 			airport3.push(air_num);
-			airport3_used = true;
-			airplane_initiate(air_num, airport1_used, airport2_used, airport3_used,
+			airport3_used_takeoff = true;
+			airplane_initiate(air_num, airport1_used, airport2_used, airport3_used_takeoff,
 				airport1_landing, airport2_landing, airport3, air_1, air_2, air_3, air_4); // 이륙때만 필요
 
-			update_situation(air_num, air_1, air_2, air_3, air_4);
+			update_situation(air_num, true, air_1, air_2, air_3, air_4);
 		};
-
 		
 	}
-
-	
 
 	return airport_num;
 }
 
-int landing_airplane(int airport_num, int air_num, bool& airport1_used, bool& airport2_used, bool& airport3_used,
+int landing_airplane(int airport_num, int air_num, bool& airport1_used, bool& airport2_used, bool& airport3_used_takeoff,
 	queue<int>& airport1_landing, queue<int>& airport2_landing, queue<int>& airport3,
 	airplane& air_1, airplane& air_2, airplane& air_3, airplane& air_4)
 {
@@ -387,48 +383,43 @@ int landing_airplane(int airport_num, int air_num, bool& airport1_used, bool& ai
 
 	if (airport_num == 0) // 착륙불가
 	{
-		if (air_1.get_airnum(air_1.check_flying()) == air_num)
+		if (air_1.get_airnum(-1) == air_num)
 			air_1.set_accident(true);
-		if (air_2.get_airnum(air_2.check_flying()) == air_num)
+		if (air_2.get_airnum(-1) == air_num)
 			air_2.set_accident(true);
-		if (air_3.get_airnum(air_3.check_flying()) == air_num)
+		if (air_3.get_airnum(-1) == air_num)
 			air_3.set_accident(true);
-		if (air_4.get_airnum(air_4.check_flying()) == air_num)
+		if (air_4.get_airnum(-1) == air_num)
 			air_4.set_accident(true);
 
-		update_situation(air_num, air_1, air_2, air_3, air_4);
+		update_situation(air_num, false, air_1, air_2, air_3, air_4);
 
 		return airport_num;
 	}
 
 	if (airport_num == 1 && airport1_used == false)
 	{
-		airport1_landing.push(air_num);
+		airport1_landing.push(air_num - 1);
 		airport1_used = true;
 
-		update_situation(air_num, air_1, air_2, air_3, air_4);
+		update_situation(air_num, false, air_1, air_2, air_3, air_4);
 	}
 
 	if (airport_num == 2 && airport2_used == false)
 	{
-		airport2_landing.push(air_num);
+		airport2_landing.push(air_num - 1);
 		airport2_used = true;
 
-		update_situation(air_num, air_1, air_2, air_3, air_4);
+		update_situation(air_num, false, air_1, air_2, air_3, air_4);
 	}
 				
-	if (airport_num == 3 && airport3_used == false)
+	if (airport_num == 3 && airport3.size() == 0)
 	{
-		airport3.push(air_num); // airport3에 있는 값이 이륙인지 출력인지 확인
-		airport3_used = true;
+		airport3.push(air_num - 1); // airport3에 있는 값이 이륙인지 출력인지 확인
 
-		update_situation(air_num, air_1, air_2, air_3, air_4);
+		update_situation(air_num, false, air_1, air_2, air_3, air_4);
 	}
 		
-		
-
-	
-
 	return airport_num;
 }
 
@@ -452,7 +443,7 @@ int search_takeoff_airport(int air_num, queue<int>& airport1_landing, queue<int>
 		return 0;
 }
 
-int search_landing_airport(int situation, bool& airport1_used, bool& airport2_used, bool& airport3_used,
+int search_landing_airport(int situation, bool& airport1_used, bool& airport2_used, bool& airport3_used_takeoff,
 	queue<int>& airport1_landing, queue<int>& airport2_landing, queue<int>& airport3) // 착륙위치 반환
 {
 	if (airport1_used == false && airport1_landing.size() == 0)
@@ -465,7 +456,7 @@ int search_landing_airport(int situation, bool& airport1_used, bool& airport2_us
 	else if (airport2_used == false && airport1_used == true && airport2_landing.size() < 2)
 		return 2;
 
-	else if (airport3_used == false && airport3.size() == 0)
+	else if (airport3_used_takeoff == false && airport3.size() == 0)
 		return 3;
 
 	else if (situation < 0) // -1 = 사고
@@ -477,21 +468,21 @@ int search_landing_airport(int situation, bool& airport1_used, bool& airport2_us
 }
 
 
-int find_airport(int situation, int air_num, bool& airport1_used, bool& airport2_used, bool& airport3_used,
+int find_airport(int situation, int air_num, bool& airport1_used, bool& airport2_used, bool& airport3_used_takeoff,
 	queue<int>& airport1_takeoff, queue<int>& airport1_landing, queue<int>& airport2_takeoff,
 	queue<int>& airport2_landing, queue<int>& airport3, airplane& air_1, airplane& air_2, airplane& air_3,
 	airplane& air_4)
 {
 	int find_result = 0;
 
-	if (situation % 2 == 1) // 착륙 (날고있는 상태)
-		find_result = landing_airplane(search_landing_airport(situation, airport1_used, airport2_used, airport3_used,
-			airport1_landing, airport2_landing, airport3), air_num, airport1_used, airport2_used, airport3_used,
+	if (air_num % 2 == 1) // 착륙 (날고있는 상태)
+		find_result = landing_airplane(search_landing_airport(situation, airport1_used, airport2_used, airport3_used_takeoff,
+			airport1_landing, airport2_landing, airport3), air_num, airport1_used, airport2_used, airport3_used_takeoff,
 			airport1_landing, airport2_landing, airport3, air_1, air_2, air_3, air_4);
 
 	else // 이륙 (대기중)
 		find_result = takeoff_airplane(search_takeoff_airport(air_num,
-			airport1_landing, airport2_landing, airport3), air_num, airport1_used, airport2_used, airport3_used,
+			airport1_landing, airport2_landing, airport3), air_num, airport1_used, airport2_used, airport3_used_takeoff,
 			airport1_takeoff, airport1_landing, airport2_takeoff, airport2_landing, airport3,
 			air_1, air_2, air_3, air_4);
 
@@ -503,24 +494,24 @@ int find_airport(int situation, int air_num, bool& airport1_used, bool& airport2
 void cal_priority(vector <pair<bool, int>>& takeoff_priority, vector <pair<int, int>>& landing_priority,
 	airplane& air_1, airplane& air_2, airplane& air_3, airplane& air_4) // 비행기의 비행 여부 및 우선순위를 판단
 {
-	if (air_1.get_status())
+	if (air_1.get_status() == 11)
 		landing_priority.push_back(make_pair(air_1.get_limittime(), air_1.get_airnum(air_1.check_flying())));
-	else
+	else if (air_1.get_status() == 1)
 		takeoff_priority.push_back(make_pair(air_1.check_engaged_full(), air_1.get_airnum(air_1.check_flying())));
 
-	if (air_2.get_status())
+	if (air_2.get_status() == 11)
 		landing_priority.push_back(make_pair(air_2.get_limittime(), air_2.get_airnum(air_2.check_flying())));
-	else
+	else if (air_2.get_status() == 1)
 		takeoff_priority.push_back(make_pair(air_2.check_engaged_full(), air_2.get_airnum(air_2.check_flying())));
 
-	if (air_3.get_status())
+	if (air_3.get_status() == 11)
 		landing_priority.push_back(make_pair(air_3.get_limittime(), air_3.get_airnum(air_3.check_flying())));
-	else
+	else if (air_3.get_status() == 1)
 		takeoff_priority.push_back(make_pair(air_3.check_engaged_full(), air_3.get_airnum(air_3.check_flying())));
 
-	if (air_4.get_status())
+	if (air_4.get_status() == 11)
 		landing_priority.push_back(make_pair(air_4.get_limittime(), air_4.get_airnum(air_4.check_flying())));
-	else
+	else if (air_4.get_status() == 1)
 		takeoff_priority.push_back(make_pair(air_4.check_engaged_full(), air_4.get_airnum(air_4.check_flying())));
 
 	// 수집한 벡터값으로 이/착륙 우선순위를 매긴다
@@ -532,16 +523,16 @@ void cal_priority(vector <pair<bool, int>>& takeoff_priority, vector <pair<int, 
 
 void update_fuel(airplane& air_1, airplane& air_2, airplane& air_3, airplane& air_4)
 {
-	if (air_1.check_flying() == true) air_1.using_fuel();
+	if (air_1.check_flying()) air_1.using_fuel();
 	else air_1.engage_fuel();
 
-	if (air_2.check_flying() == true) air_2.using_fuel();
+	if (air_2.check_flying()) air_2.using_fuel();
 	else air_2.engage_fuel();
 
-	if (air_3.check_flying() == true) air_3.using_fuel();
+	if (air_3.check_flying()) air_3.using_fuel();
 	else air_3.engage_fuel();
 
-	if (air_4.check_flying() == true) air_4.using_fuel();
+	if (air_4.check_flying()) air_4.using_fuel();
 	else air_4.engage_fuel();
 }
 
@@ -552,8 +543,7 @@ void test()
 	int emergency_landing = 0, accident = 0; // 비상착륙, 사고
 	int airport_decided_line = 0;
 
-	bool airport1_used = false, airport2_used = false, airport3_used = false; // 단위 시간에 사용되었는지 여부 검사
-	bool IsEmergency = false, IsTakeoff = false;
+	bool airport1_used = false, airport2_used = false, airport3_used_takeoff = false; // 단위 시간에 사용되었는지 여부 검사
 
 	vector <pair<bool, int>> takeoff_priority; // 이/착륙할 비행기 데이터 저장 -> sort() 함수로 정렬, 순서대로 이/착륙
 	vector <pair<int, int>> landing_priority; // 이륙 : 완충여부/비행기번호, 착륙 : 비행가능시간/비행기번호
@@ -571,7 +561,7 @@ void test()
 
 	cout << "\n\n [ 초기 상태 ] \n\n";
 	print_result(airport1_takeoff, airport1_landing, airport2_takeoff, airport2_landing, airport3,
-		air_1, air_2, air_3, air_4); // 단위 시간마다 현재 상태 출력
+		air_1, air_2, air_3, air_4, airport3_used_takeoff); // 단위 시간마다 현재 상태 출력
 
 
 	while (test_time)
@@ -582,9 +572,6 @@ void test()
 
 		cal_priority(takeoff_priority, landing_priority, air_1, air_2, air_3, air_4);
 
-
-		// 수집한 벡터값으로 이/착륙 우선순위를 매긴다
-
 		sort(landing_priority.begin(), landing_priority.end());
 		sort(takeoff_priority.begin(), takeoff_priority.end());
 
@@ -594,7 +581,7 @@ void test()
 		if (landing_priority.size() > 0)
 			for (int i = 0; i < landing_priority.size(); i++)
 				if (landing_priority[i].first <= 0) // 비상착륙 상황. (수정 필요)
-					find_airport(landing_priority[i].first, landing_priority[i].second, airport1_used, airport2_used, airport3_used,
+					find_airport(landing_priority[i].first, landing_priority[i].second, airport1_used, airport2_used, airport3_used_takeoff,
 						airport1_takeoff, airport1_landing, airport2_takeoff,
 						airport2_landing, airport3, air_1, air_2, air_3, air_4);
 		// 적절한 큐를 찾는다. 큐값을 찾지 못한다면 사고로 기록한다.
@@ -603,23 +590,23 @@ void test()
 		if (takeoff_priority.size() > 0)
 			for (int i = 0; i < takeoff_priority.size(); i++)
 				if (takeoff_priority[i].first == true) // 이륙 상황 (현재 대기상태)
-					find_airport(takeoff_priority[i].second % 2, takeoff_priority[i].second, airport1_used, airport2_used, airport3_used,
+					find_airport(takeoff_priority[i].second % 2, takeoff_priority[i].second, airport1_used, airport2_used, airport3_used_takeoff,
 						airport1_takeoff, airport1_landing, airport2_takeoff, airport2_landing, airport3,
 						air_1, air_2, air_3, air_4);
 
 		if (landing_priority.size() > 0)
 			for (int i = 0; i < landing_priority.size(); i++)
 				if (landing_priority[i].first != 0) // 착륙 상황 (현재 비행중)
-					find_airport(landing_priority[i].first, landing_priority[i].second, airport1_used, airport2_used, airport3_used,
+					find_airport(landing_priority[i].first, landing_priority[i].second, airport1_used, airport2_used, airport3_used_takeoff,
 						airport1_takeoff, airport1_landing, airport2_takeoff, airport2_landing, airport3,
 						air_1, air_2, air_3, air_4);
 
 		print_result(airport1_takeoff, airport1_landing, airport2_takeoff, airport2_landing, airport3,
-			air_1, air_2, air_3, air_4); // 단위 시간마다 현재 상태 출력
+			air_1, air_2, air_3, air_4, airport3_used_takeoff); // 단위 시간마다 현재 상태 출력
 
 
 		unit_setting(landing_priority, takeoff_priority, airport1_takeoff, airport1_landing,
-			airport2_takeoff, airport2_landing, airport3, airport1_used, airport2_used, airport3_used); 
+			airport2_takeoff, airport2_landing, airport3, airport1_used, airport2_used, airport3_used_takeoff); 
 		// 세팅 초기화 (airport_used 초기화 등). Sleep(1000)도 여기서 해결. 이륙장 초기화도 필요
 		test_time--; // unit_setting()에 삽입
 	}
