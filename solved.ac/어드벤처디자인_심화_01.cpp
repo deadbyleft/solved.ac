@@ -21,6 +21,7 @@ private:
 	bool accident = false; // 사고여부
 	bool flying = false; // 비행여부
 	bool emergency_landing = false; // 긴급 착륙 여부
+	bool now_landing = false; // 이번 단위 시간에서의 착륙 여부
 
 public:
 	void set_initial()
@@ -87,7 +88,16 @@ public:
 	{
 		accident = check;
 	}
+	void set_now_landing(bool check)
+	{
+		now_landing = check;
+	}
 
+
+	int get_now_landing()
+	{
+		return now_landing;
+	}
 	int get_limittime() // 제한시간
 	{
 		return (now_fuel / loss_fuel);
@@ -210,18 +220,30 @@ void print_result(int test_time, queue<int>& airport1_takeoff, queue<int>& airpo
 		cout << "  [ 착륙 큐 ] : " << airport3.front();
 
 	cout << "\n\n 착륙 시 남아 있는 제한 시간의 평균 : ";
-	if (air_1.get_limittime() != 0) landing_num++;
-	if (air_2.get_limittime() != 0) landing_num++;
-	if (air_3.get_limittime() != 0) landing_num++;
-	if (air_4.get_limittime() != 0) landing_num++;
 
-	remain_avg += air_1.get_limittime();
-	remain_avg += air_2.get_limittime();
-	remain_avg += air_3.get_limittime();
-	remain_avg += air_4.get_limittime();
+	if (air_1.get_now_landing())
+	{
+		landing_num++;
+		remain_avg += air_1.get_limittime();
+	}	
+	if (air_2.get_now_landing()) 
+	{
+		landing_num++;
+		remain_avg += air_2.get_limittime();
+	}
+	if (air_3.get_now_landing())
+	{
+		landing_num++;
+		remain_avg += air_3.get_limittime();
+	}
+	if (air_4.get_now_landing())
+	{
+		landing_num++;
+		remain_avg += air_4.get_limittime();
+	}
 
-	if (landing_num == 0) cout << "0";
-	else cout << remain_avg / landing_num << " 초 ";
+	if (landing_num == 0) cout << " 착륙한 비행기 없음 ";
+	else cout << remain_avg / (float)landing_num << " 초 ";
 
 	cout << "\n\n ---------------------------------------------------------------------------";
 
@@ -261,6 +283,11 @@ void unit_setting(vector <pair<int, int>>& landing_priority, vector <pair<bool, 
 
 	landing_priority.clear();
 	takeoff_priority.clear();
+
+	air_1.set_now_landing(airport1_used);
+	air_2.set_now_landing(airport1_used);
+	air_3.set_now_landing(airport1_used);
+	air_4.set_now_landing(airport1_used);
 
 	// 다 없애면 안됨 (비행중인것만)
 	
@@ -318,27 +345,39 @@ void update_situation(int air_num, bool flying, airplane& air_1, airplane& air_2
 {
 	if (air_1.get_airnum(-1) == air_num / 10)
 		if (flying)
-			air_1.set_flying(true);
+			air_1.set_flying(flying);
 		else
-			air_1.set_flying(false);
-
+		{
+			air_1.set_now_landing(!flying);
+			air_1.set_flying(flying);
+		}
+			
 	if (air_2.get_airnum(-1) == air_num / 10)
 		if (flying)
-			air_2.set_flying(true);
+			air_2.set_flying(flying);
 		else
-			air_2.set_flying(false);
+		{
+			air_2.set_now_landing(!flying);
+			air_2.set_flying(flying);
+		}
 
 	if (air_3.get_airnum(-1) == air_num / 10)
 		if (flying)
-			air_3.set_flying(true);
+			air_3.set_flying(flying);
 		else
-			air_3.set_flying(false);
+		{
+			air_3.set_now_landing(!flying);
+			air_3.set_flying(flying);
+		}
 
 	if (air_4.get_airnum(-1) == air_num / 10)
 		if (flying)
-			air_4.set_flying(true);
+			air_4.set_flying(flying);
 		else
-			air_4.set_flying(false);
+		{
+			air_4.set_now_landing(!flying);
+			air_4.set_flying(flying);
+		}
 	
 }
 
@@ -399,16 +438,28 @@ int landing_airplane(int airport_num, int air_num, bool& airport1_used, bool& ai
 
 	if (airport_num == 0) // 착륙불가
 	{
-		if (air_1.get_airnum(-1) == air_num / 10)
+		if (air_1.get_airnum(-1) == air_num / 10 && air_1.get_limittime() <= 0)
+		{
 			air_1.set_accident(true);
-		if (air_2.get_airnum(-1) == air_num / 10)
+			update_situation(air_num, false, air_1, air_2, air_3, air_4);
+		}			
+		if (air_2.get_airnum(-1) == air_num / 10 && air_2.get_limittime() <= 0)
+		{
 			air_2.set_accident(true);
-		if (air_3.get_airnum(-1) == air_num / 10)
+			update_situation(air_num, false, air_1, air_2, air_3, air_4);
+		}
+		if (air_3.get_airnum(-1) == air_num / 10 && air_3.get_limittime() <= 0)
+		{
 			air_3.set_accident(true);
-		if (air_4.get_airnum(-1) == air_num / 10)
+			update_situation(air_num, false, air_1, air_2, air_3, air_4);
+		}
+		if (air_4.get_airnum(-1) == air_num / 10 && air_4.get_limittime() <= 0)
+		{
 			air_4.set_accident(true);
+			update_situation(air_num, false, air_1, air_2, air_3, air_4);
+		}
 
-		update_situation(air_num, false, air_1, air_2, air_3, air_4);
+		
 
 		return airport_num;
 	}
