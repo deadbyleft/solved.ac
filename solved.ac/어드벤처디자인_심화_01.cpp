@@ -151,13 +151,14 @@ public:
 	}
 };
 
-void print_result(queue<int>& airport1_takeoff, queue<int>& airport1_landing, queue<int>& airport2_takeoff,
+void print_result(int test_time, queue<int>& airport1_takeoff, queue<int>& airport1_landing, queue<int>& airport2_takeoff,
 	queue<int>& airport2_landing, queue<int>& airport3,
 	airplane& air_1, airplane& air_2, airplane& air_3, airplane& air_4, bool airport3_used_takeoff) // 사고, 비상착륙 추가
 {
 	int remain_avg = 0, landing_num = 0;
 
-	cout << "\n\n";
+	if (test_time==0) cout << "\n\n [ 초기 상태 ] ";
+	else cout << "\n\n [ " << test_time << "초 경과 ] \n\n ";
 
 	air_1.print_status();
 	air_2.print_status();
@@ -205,7 +206,7 @@ void print_result(queue<int>& airport1_takeoff, queue<int>& airport1_landing, qu
 			cout << airport2_landing.back() << " ";
 	}
 
-	cout << "\n\n [ 3번 공항 ]\n";
+	cout << "\n\n [ 3번 공항 ] \n";
 
 	if (airport3_used_takeoff)
 		cout << " [ 이륙 큐 ] : " << airport3.front();
@@ -558,7 +559,7 @@ void update_fuel(airplane& air_1, airplane& air_2, airplane& air_3, airplane& ai
 
 void test()
 {
-	int test_time = 0, remain_limit_avg = 0; // 실험 시간, 남은 제한시간 평균
+	int test_time = 0, initial_time = 0; // 실험 시간, 최초 시간
 	int wait_takeoff = 0, wait_landing = 0; // 이륙, 착륙 대기시간
 	int emergency_landing = 0, accident = 0; // 비상착륙, 사고
 	int airport_decided_line = 0;
@@ -578,9 +579,9 @@ void test()
 	queue<int> airport3;
 
 	test_time = initial_setting(air_1, air_2, air_3, air_4, airport1_landing, airport2_landing, test_time);
+	initial_time = test_time;
 
-	cout << "\n\n [ 초기 상태 ] \n\n";
-	print_result(airport1_takeoff, airport1_landing, airport2_takeoff, airport2_landing, airport3,
+	print_result(initial_time - test_time, airport1_takeoff, airport1_landing, airport2_takeoff, airport2_landing, airport3,
 		air_1, air_2, air_3, air_4, airport3_used_takeoff); // 단위 시간마다 현재 상태 출력
 
 
@@ -621,7 +622,7 @@ void test()
 						airport1_takeoff, airport1_landing, airport2_takeoff, airport2_landing, airport3,
 						air_1, air_2, air_3, air_4);
 
-		print_result(airport1_takeoff, airport1_landing, airport2_takeoff, airport2_landing, airport3,
+		print_result(initial_time - test_time + 1, airport1_takeoff, airport1_landing, airport2_takeoff, airport2_landing, airport3,
 			air_1, air_2, air_3, air_4, airport3_used_takeoff); // 단위 시간마다 현재 상태 출력
 
 
@@ -629,7 +630,7 @@ void test()
 			airport2_takeoff, airport2_landing, airport3, airport1_used, airport2_used, airport3_used_takeoff,
 			air_1, air_2, air_3, air_4); 
 		// 세팅 초기화 (airport_used 초기화 등). Sleep(1000)도 여기서 해결. 이륙장 초기화도 필요
-		test_time--; // unit_setting()에 삽입
+		test_time--;
 	}
 
 	conclusion();
@@ -638,7 +639,6 @@ void test()
 int main()
 {
 	test();
-
 
 	return 0;
 }
