@@ -13,7 +13,10 @@ private:
 	int fuel = 100; // 연료
 	int now_fuel = 100; // 현재 연료
 	int loss_fuel = 1; // 단위 시간당 잃는 연료
-	int waiting = 0; // 대기중인 시간
+
+	int waiting_takeoff = 0; // 평균 이륙 대기 시간
+	int waiting_landing = 0; // 평균 착륙 대기 시간
+	int landing_remain_fuel = 0; // 착륙 시 남아 있는 제한 시간의 평균
 
 	bool accident = false; // 사고여부
 	bool flying = false; // 비행여부
@@ -49,9 +52,15 @@ public:
 	void set_flying(bool flying_now)
 	{
 		if (flying_now == true)
+		{
 			flying = true;
+		}
+			
 		else
+		{
 			flying = false;
+		}
+			
 	}
 	void print_status()
 	{
@@ -83,10 +92,6 @@ public:
 	{
 		return (now_fuel / loss_fuel);
 	}
-	int get_waiting()
-	{
-		return waiting;
-	}
 	int get_airnum(int value)
 	{
 		if (value == -1)
@@ -104,7 +109,6 @@ public:
 	{
 		return loss_fuel;
 	}
-
 	int get_status()
 	{
 		if (check_accident()) // 사용가능여부 확인 (사고유무)
@@ -151,6 +155,8 @@ void print_result(queue<int>& airport1_takeoff, queue<int>& airport1_landing, qu
 	queue<int>& airport2_landing, queue<int>& airport3,
 	airplane& air_1, airplane& air_2, airplane& air_3, airplane& air_4, bool airport3_used_takeoff) // 사고, 비상착륙 추가
 {
+	int remain_avg = 0, landing_num = 0;
+
 	cout << "\n\n";
 
 	air_1.print_status();
@@ -206,6 +212,20 @@ void print_result(queue<int>& airport1_takeoff, queue<int>& airport1_landing, qu
 	else if (airport3.size() > 0)
 		cout << " [ 착륙 큐 ] : " << airport3.front();
 
+	cout << "\n\n 착륙 시 남아 있는 제한 시간의 평균 : ";
+	if (air_1.get_limittime() != 0) landing_num++;
+	if (air_2.get_limittime() != 0) landing_num++;
+	if (air_3.get_limittime() != 0) landing_num++;
+	if (air_4.get_limittime() != 0) landing_num++;
+
+	remain_avg += air_1.get_limittime();
+	remain_avg += air_2.get_limittime();
+	remain_avg += air_3.get_limittime();
+	remain_avg += air_4.get_limittime();
+
+	if (landing_num == 0) cout << "0";
+	else cout << remain_avg / landing_num << " 초 ";
+
 	cout << "\n\n ---------------------------------------------------------------------------";
 
 	Sleep(1000);
@@ -235,7 +255,8 @@ int initial_setting(airplane& air_1, airplane& air_2, airplane& air_3, airplane&
 
 void unit_setting(vector <pair<int, int>>& landing_priority, vector <pair<bool, int>>& takeoff_priority,
 	queue<int>& airport1_takeoff, queue<int>& airport1_landing, queue<int>& airport2_takeoff, queue<int>& airport2_landing, queue<int>& airport3,
-	bool& airport1_used, bool& airport2_used, bool& airport3_used_takeoff)
+	bool& airport1_used, bool& airport2_used, bool& airport3_used_takeoff,
+	airplane& air_1, airplane& air_2, airplane& air_3, airplane& air_4)
 {
 	airport1_used = false;
 	airport2_used = false;
@@ -450,9 +471,9 @@ int search_landing_airport(int situation, bool& airport1_used, bool& airport2_us
 	else if (airport2_used == false && airport2_landing.size() == 0)
 		return 2;
 
-	else if (airport1_used == false && airport2_used == true && airport1_landing.size() < 2)
+	else if (airport1_used == false && airport1_landing.size() < 2)
 		return 1;
-	else if (airport2_used == false && airport1_used == true && airport2_landing.size() < 2)
+	else if (airport2_used == false && airport2_landing.size() < 2)
 		return 2;
 
 	else if (airport3_used_takeoff == false && airport3.size() == 0)
@@ -605,7 +626,8 @@ void test()
 
 
 		unit_setting(landing_priority, takeoff_priority, airport1_takeoff, airport1_landing,
-			airport2_takeoff, airport2_landing, airport3, airport1_used, airport2_used, airport3_used_takeoff); 
+			airport2_takeoff, airport2_landing, airport3, airport1_used, airport2_used, airport3_used_takeoff,
+			air_1, air_2, air_3, air_4); 
 		// 세팅 초기화 (airport_used 초기화 등). Sleep(1000)도 여기서 해결. 이륙장 초기화도 필요
 		test_time--; // unit_setting()에 삽입
 	}
