@@ -252,7 +252,10 @@ void unit_setting(vector <pair<int, int>>& landing_priority, vector <pair<bool, 
 	while (!airport2_takeoff.empty())
 		airport2_takeoff.pop();
 	while (!airport3.empty())
-		airport3.pop();
+		if (airport3.front() % 2 == 1)
+			airport3.pop();
+		else
+			break;
 		
 
 }
@@ -287,13 +290,9 @@ void airplane_initiate(int air_num, bool& airport1_used, bool& airport2_used, bo
 			airport2_landing.pop();
 	}
 
-	if (airport3.size() > 0) // 이상함
-	{
-		if (airport3.back() == air_num)
-			swap(airport3.front(), airport3.back());
+	if (airport3.size() > 0)
 		if (airport3.front() == air_num)
 			airport3.pop();
-	}
 
 	// air_num 번호 따라 class airplane 초기화
 }
@@ -341,7 +340,7 @@ int takeoff_airplane(int airport_num, int air_num, bool& airport1_used, bool& ai
 
 		if (airport_num == 1 && airport1_used == false)
 		{
-			airport1_takeoff.push(air_num);
+			airport1_takeoff.push(air_num + 1);
 			airport1_used = true;
 			airplane_initiate(air_num, airport1_used, airport2_used, airport3_used_takeoff,
 				airport1_landing, airport2_landing, airport3, air_1, air_2, air_3, air_4); // 이륙때만 필요
@@ -351,7 +350,7 @@ int takeoff_airplane(int airport_num, int air_num, bool& airport1_used, bool& ai
 
 		if (airport_num == 2 && airport2_used == false)
 		{
-			airport2_takeoff.push(air_num);
+			airport2_takeoff.push(air_num + 1);
 			airport2_used = true;
 			airplane_initiate(air_num, airport1_used, airport2_used, airport3_used_takeoff,
 				airport1_landing, airport2_landing, airport3, air_1, air_2, air_3, air_4); // 이륙때만 필요
@@ -361,7 +360,7 @@ int takeoff_airplane(int airport_num, int air_num, bool& airport1_used, bool& ai
 
 		if (airport_num == 3 && airport3_used_takeoff == false)
 		{
-			airport3.push(air_num);
+			airport3.push(air_num + 1);
 			airport3_used_takeoff = true;
 			airplane_initiate(air_num, airport1_used, airport2_used, airport3_used_takeoff,
 				airport1_landing, airport2_landing, airport3, air_1, air_2, air_3, air_4); // 이륙때만 필요
@@ -383,13 +382,13 @@ int landing_airplane(int airport_num, int air_num, bool& airport1_used, bool& ai
 
 	if (airport_num == 0) // 착륙불가
 	{
-		if (air_1.get_airnum(-1) == air_num)
+		if (air_1.get_airnum(-1) == air_num / 10)
 			air_1.set_accident(true);
-		if (air_2.get_airnum(-1) == air_num)
+		if (air_2.get_airnum(-1) == air_num / 10)
 			air_2.set_accident(true);
-		if (air_3.get_airnum(-1) == air_num)
+		if (air_3.get_airnum(-1) == air_num / 10)
 			air_3.set_accident(true);
-		if (air_4.get_airnum(-1) == air_num)
+		if (air_4.get_airnum(-1) == air_num / 10)
 			air_4.set_accident(true);
 
 		update_situation(air_num, false, air_1, air_2, air_3, air_4);
