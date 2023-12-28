@@ -45,5 +45,17 @@
     <ClCompile Include="어드벤처디자인_심화_01.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="17070.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="14938.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="BFS_EX.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="12851_실패.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
